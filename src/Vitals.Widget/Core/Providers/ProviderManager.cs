@@ -141,6 +141,7 @@ public sealed class ProviderManager : IDisposable
         {
             map["linux-amd-hwmon"] = () => new LinuxAmdHwmonGpuProvider();
             map["linux-nvidia-hwmon"] = () => new LinuxNvidiaHwmonGpuProvider();
+            map["linux-nvidia-smi"] = () => new LinuxNvidiaSmiGpuProvider();
 
             // If you ever add a Linux NVML provider, you can map it here
             // map["linux-nvidia-nvml"] = ...

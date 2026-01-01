@@ -19,7 +19,13 @@ namespace Vitals.Widget
 
         // Provider order lists (skeleton now, real providers later)
         public string[] GpuProviderOrderWindows { get; set; } = new[] { "nvidia-nvml", "amd-adlx", "intel" };
-        public string[] GpuProviderOrderLinux { get; set; } = new[] { "linux-amd-hwmon", "linux-nvidia-hwmon" };
+        public string[] GpuProviderOrderLinux { get; set; } = new[]
+{
+    "linux-amd-hwmon",
+    "linux-nvidia-smi",
+    "linux-nvidia-hwmon"
+};
+
 
         public string[] CpuProviderOrderWindows { get; set; } = new[] { "windows-cpu-wmi" };
 
