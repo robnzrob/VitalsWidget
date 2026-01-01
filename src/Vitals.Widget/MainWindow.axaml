@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="Vitals.Widget.MainWindow"
+        Title="Vitals.Widget"
+        Width="130"
+        Height="70"
+        CanResize="False"
+        SystemDecorations="None"
+        Topmost="True"
+        TransparencyLevelHint="Transparent"
+        Background="#00000000">
+  <Border x:Name="RootBorder"
+          CornerRadius="10"
+          Padding="10,8"
+          Background="#00000000"
+          PointerPressed="Border_OnPointerPressed">
+
+    <Border.ContextMenu>
+      <ContextMenu Opened="ContextMenu_OnOpened">
+        <MenuItem x:Name="LockMenuItem"
+          Header="Lock position"
+          Click="Lock_OnClick"/>
+        <Separator/>
+        <MenuItem Header="Background more solid" Click="BgMoreSolid_OnClick"/>
+        <MenuItem Header="Background more transparent" Click="BgMoreTransparent_OnClick"/>
+        <MenuItem Header="Background reset" Click="BgReset_OnClick"/>
+        <Separator/>
+        <MenuItem Header="Exit" Click="Exit_OnClick"/>
+      </ContextMenu>
+    </Border.ContextMenu>
+
+    <StackPanel Spacing="6">
+      <TextBlock Text="CPU 55°C"
+                 FontSize="22"
+                 FontWeight="SemiBold"
+                 Foreground="Lime"/>
+
+      <TextBlock x:Name="GpuText"
+           Text="GPU ..."
+           FontSize="22"
+           FontWeight="SemiBold"
+           Foreground="Lime"/>
+
+    </StackPanel>
+  </Border>
+</Window>

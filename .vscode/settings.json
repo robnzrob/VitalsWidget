@@ -1,0 +1,6 @@
+{
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.defaultFormatter": "ms-dotnettools.csharp"
+}
