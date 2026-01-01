@@ -9,11 +9,22 @@ namespace Vitals.Widget
         public int X { get; set; } = 100;
         public int Y { get; set; } = 100;
 
-        // 0.15 = very transparent background, 1.0 = solid background
-        public double BackgroundOpacity { get; set; } = 0.15;
+        public bool ShowCpu { get; set; } = true;
+        public bool ShowGpu { get; set; } = true;
 
+        // 0.15 = very transparent background, 1.0 = solid background
+        public double BackgroundOpacity { get; set; } = 0.66;
 
         public bool IsLocked { get; set; } = false;
+
+        // Provider order lists (skeleton now, real providers later)
+        public string[] GpuProviderOrderWindows { get; set; } = new[] { "nvidia-nvml", "amd-adlx", "intel" };
+        public string[] GpuProviderOrderLinux { get; set; } = new[] { "linux-amd-hwmon", "linux-nvidia-hwmon" };
+
+        public string[] CpuProviderOrderWindows { get; set; } = new[] { "windows-cpu-wmi" };
+
+        public string[] CpuProviderOrderLinux { get; set; } = new[] { "linux-cpu-hwmon" };
+
     }
 
     public static class WidgetSettingsStore
