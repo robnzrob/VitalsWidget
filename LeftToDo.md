@@ -1,7 +1,12 @@
 # LeftToDo (GUI)
 
 Run:
-- `dotnet run --project src\Vitals.Widget`
+Windows:
+dotnet run --project src\Vitals.Widget
+
+Linux:
+dotnet run --project src/Vitals.Widget
+
 
 ## VitalsWidget
 

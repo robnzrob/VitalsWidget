@@ -42,11 +42,15 @@ public sealed class LinuxNvidiaSmiGpuProvider : IGpuTempProvider
                 return false;
 
             // Very small output, short timeout is fine.
-            if (!p.WaitForExit(800))
+            if (!p.WaitForExit(2000))
             {
                 try { p.Kill(entireProcessTree: true); } catch { }
                 return false;
             }
+            var err = (p.StandardError.ReadToEnd() ?? "").Trim();
+            if (!string.IsNullOrEmpty(err))
+                Console.WriteLine("nvidia-smi stderr: " + err);
+
 
             var output = (p.StandardOutput.ReadToEnd() ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(output))

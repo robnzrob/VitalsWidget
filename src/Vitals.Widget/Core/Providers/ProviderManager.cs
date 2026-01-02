@@ -55,8 +55,23 @@ public sealed class ProviderManager : IDisposable
 
     public bool TryGetGpuTempC(out int tempC)
     {
+        // If we have an active provider, use it first.
+        // If it fails, drop it and re-probe so we can fall through to other providers.
         if (_activeGpuProvider != null)
-            return _activeGpuProvider.TryGetGpuTempC(out tempC);
+        {
+            try
+            {
+                if (_activeGpuProvider.TryGetGpuTempC(out tempC))
+                    return true;
+            }
+            catch
+            {
+                // Treat exceptions as a failure and re-probe.
+            }
+
+            try { _activeGpuProvider.Dispose(); } catch { }
+            _activeGpuProvider = null;
+        }
 
         foreach (var factory in _gpuProviderFactories)
         {
@@ -68,12 +83,14 @@ public sealed class ProviderManager : IDisposable
 
                 if (candidate.TryGetGpuTempC(out tempC))
                 {
+                    // Only cache a provider after it proves it can return a value.
                     _activeGpuProvider = candidate;
                     return true;
                 }
             }
             catch
             {
+                // Ignore provider failures and try the next.
             }
 
             try { candidate?.Dispose(); } catch { }
@@ -82,6 +99,7 @@ public sealed class ProviderManager : IDisposable
         tempC = 0;
         return false;
     }
+
 
     private static List<Func<ICpuTempProvider>> BuildCpuProviderFactories(WidgetSettings settings)
     {
@@ -139,12 +157,9 @@ public sealed class ProviderManager : IDisposable
 
         if (OperatingSystem.IsLinux())
         {
-            map["linux-amd-hwmon"] = () => new LinuxAmdHwmonGpuProvider();
             map["linux-nvidia-hwmon"] = () => new LinuxNvidiaHwmonGpuProvider();
             map["linux-nvidia-smi"] = () => new LinuxNvidiaSmiGpuProvider();
-
-            // If you ever add a Linux NVML provider, you can map it here
-            // map["linux-nvidia-nvml"] = ...
+            map["linux-amd-hwmon"] = () => new LinuxAmdHwmonGpuProvider();
         }
 
         foreach (var key in order)
