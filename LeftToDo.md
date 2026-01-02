@@ -7,6 +7,10 @@ dotnet run --project src\Vitals.Widget
 Linux:
 dotnet run --project src/Vitals.Widget
 
+To Publish (WIndows)
+dotnet publish .\src\Vitals.Widget\Vitals.Widget.csproj -c Release -r win-x64 --self-contained false -o "C:\Work\VitalsWidget\publish\win-x64" -v minimal
+
+
 
 ## VitalsWidget
 
