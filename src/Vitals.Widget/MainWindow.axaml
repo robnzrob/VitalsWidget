@@ -12,6 +12,21 @@
         Topmost="True"
         TransparencyLevelHint="Transparent"
         Background="#00000000">
+          <Window.Styles>
+    <!-- Primary/secondary buttons for the dialog footer -->
+    <Style Selector="Button.primary">
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Padding" Value="14,8"/>
+      <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+
+    <Style Selector="Button.secondary">
+      <Setter Property="Padding" Value="14,8"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Opacity" Value="0.95"/>
+    </Style>
+  </Window.Styles>
+
 
   <Border x:Name="RootBorder"
           CornerRadius="10"
@@ -24,29 +39,30 @@
 
         <MenuItem x:Name="LockMenuItem"
                   Header="Lock position"
-                  Click="Lock_OnClick"/>
+                  ToggleType="CheckBox"
+                  Click="Lock_OnClick"
+                  />
+                  
 
         <Separator/>
 
         <MenuItem x:Name="ShowCpuMenuItem"
                   Header="Show CPU"
+                  ToggleType="CheckBox"
                   
                   Click="ShowCpu_OnClick"/>
 
         <MenuItem x:Name="ShowGpuMenuItem"
                   Header="Show GPU"
-                  
+                  ToggleType="CheckBox"
                   Click="ShowGpu_OnClick"/>
 
-        <Separator/>
-
-        <MenuItem Header="Background more solid" Click="BgMoreSolid_OnClick"/>
-        <MenuItem Header="Background more transparent" Click="BgMoreTransparent_OnClick"/>
-        <MenuItem Header="Background reset" Click="BgReset_OnClick"/>
-
-        <Separator/>
+        <Separator/>       
 
         <MenuItem Header="Reset position" Click="ResetPosition_OnClick"/>
+        <Separator/>
+<MenuItem Header="Settings..." Click="Settings_OnClick"/>
+
 
         <Separator/>
 

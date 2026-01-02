@@ -7,6 +7,15 @@ namespace Vitals.Widget
 {
     public sealed class WidgetSettings
     {
+        // Display options
+        public bool UseFahrenheit { get; set; } = false;   // default Celsius
+        public bool ShowLabels { get; set; } = true;       // show "CPU"/"GPU" text
+
+        public int FontSize { get; set; } = 22;
+
+        // Keep width fixed (v1) but configurable. Height stays SizeToContent.
+        public int WidgetWidth { get; set; } = 130;
+
         public int X { get; set; } = 100;
         public int Y { get; set; } = 100;
 
@@ -98,12 +107,20 @@ namespace Vitals.Widget
             // Scalars: keep the user's values. Defaults exist mainly so missing JSON fields get a sane value.
             var merged = new WidgetSettings
             {
+                UseFahrenheit = loaded.UseFahrenheit,
+                ShowLabels = loaded.ShowLabels,
+
                 X = loaded.X,
                 Y = loaded.Y,
+
                 ShowCpu = loaded.ShowCpu,
                 ShowGpu = loaded.ShowGpu,
+
                 BackgroundOpacity = loaded.BackgroundOpacity,
-                IsLocked = loaded.IsLocked
+                IsLocked = loaded.IsLocked,
+                FontSize = loaded.FontSize,
+                WidgetWidth = loaded.WidgetWidth,
+
             };
 
             // Provider lists: treat defaults as the allow list of keys this build supports.

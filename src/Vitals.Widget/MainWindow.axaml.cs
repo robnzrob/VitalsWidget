@@ -21,6 +21,21 @@ public partial class MainWindow : Window
     private TextBlock? _placeholderText;
     private DispatcherTimer? _timer;
 
+    private const int DefaultFontSize = 22;
+    private const int MinFontSize = 8;
+    private const int MaxFontSize = 32;
+
+    private const int DefaultWidgetWidth = 130;
+    private const int MinWidgetWidth = 50;
+    private const int MaxWidgetWidth = 260;
+
+    private const double DefaultBackgroundOpacity = 0.35;
+    private const double MinBackgroundOpacity = 0.05;
+    private const double MaxBackgroundOpacity = 1.0;
+
+    private const double BackgroundStep = 0.08;
+
+
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
@@ -42,10 +57,14 @@ public partial class MainWindow : Window
 
 
         // Apply saved window position
-        Position = new PixelPoint(_settings.X, _settings.Y);
+        Position = ClampToVisibleArea(new PixelPoint(_settings.X, _settings.Y));
+
 
         // Apply saved background opacity
         ApplyBackgroundOpacity(_settings.BackgroundOpacity);
+        ApplyWidgetWidth(_settings.WidgetWidth);
+        ApplyFontSize(_settings.FontSize);
+
 
         // Apply CPU/GPU visibility immediately (drives auto height via SizeToContent)
         ApplyLineVisibility();
@@ -74,11 +93,13 @@ public partial class MainWindow : Window
         };
     }
 
+
+
     private void ApplyBackgroundOpacity(double value)
     {
         // Clamp to sensible range
-        if (value < 0.15) value = 0.15;
-        if (value > 1.0) value = 1.0;
+        if (value < MinBackgroundOpacity) value = MinBackgroundOpacity;
+        if (value > MaxBackgroundOpacity) value = MaxBackgroundOpacity;
 
         _settings.BackgroundOpacity = value;
 
@@ -110,6 +131,44 @@ public partial class MainWindow : Window
         var p = Position;
         Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
     }
+    private void ApplyFontSize(int value)
+    {
+        // Clamp to sensible range for a tiny widget.
+        if (value < MinFontSize) value = MinFontSize;
+        if (value > MaxFontSize) value = MaxFontSize;
+
+
+
+        _settings.FontSize = value;
+
+        if (_cpuText != null) _cpuText.FontSize = value;
+        if (_gpuText != null) _gpuText.FontSize = value;
+        if (_placeholderText != null) _placeholderText.FontSize = value;
+
+        InvalidateMeasure();
+        InvalidateArrange();
+
+        // Keep anchored after height recalculation.
+        var p = Position;
+        Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
+    }
+
+    private void ApplyWidgetWidth(int value)
+    {
+        // Width is a UX choice; keep it within a sane band.
+        if (value < MinWidgetWidth) value = MinWidgetWidth;
+        if (value > MaxWidgetWidth) value = MaxWidgetWidth;
+
+        _settings.WidgetWidth = value;
+        Width = value;
+
+        InvalidateMeasure();
+        InvalidateArrange();
+
+        // Width changes can also trigger work-area clamping in docked overlays.
+        var p = Position;
+        Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
+    }
 
     private void Border_OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
@@ -119,6 +178,36 @@ public partial class MainWindow : Window
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
     }
+    private void Settings_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var win = new SettingsWindow(_settings, ApplyAllVisualSettings);
+        win.Show(this);
+    }
+
+    private void ApplyAllVisualSettings()
+    {
+        ApplyFontSize(_settings.FontSize);
+        ApplyWidgetWidth(_settings.WidgetWidth);
+        ApplyBackgroundOpacity(_settings.BackgroundOpacity);
+    }
+    private string FormatTempText(string label, int tempC)
+    {
+        var showLabels = _settings.ShowLabels;
+
+        if (_settings.UseFahrenheit)
+        {
+            var tempF = (int)Math.Round((tempC * 9.0 / 5.0) + 32.0);
+            return showLabels ? $"{label} {tempF}°F" : $"{tempF}°F";
+        }
+
+        return showLabels ? $"{label} {tempC}°C" : $"{tempC}°C";
+    }
+
+    private string FormatNaText(string label)
+    {
+        return _settings.ShowLabels ? $"{label} N/A" : "N/A";
+    }
+
 
     private void Lock_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -154,10 +243,11 @@ public partial class MainWindow : Window
 
     private void ResetPosition_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        Position = new PixelPoint(50, 50);
-        _settings.X = Position.X;
-        _settings.Y = Position.Y;
-        WidgetSettingsStore.Save(_settings);
+        //User will most likely want to move widget so unlock it.
+        _settings.IsLocked = false;
+
+        SetPositionAndPersist(GetCenteredOnCurrentScreen());
+
     }
 
     private void ContextMenu_OnOpened(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -181,23 +271,6 @@ public partial class MainWindow : Window
             showGpuItem.IsChecked = _settings.ShowGpu;
     }
 
-    private void BgMoreSolid_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        ApplyBackgroundOpacity(_settings.BackgroundOpacity + 0.08);
-        WidgetSettingsStore.Save(_settings);
-    }
-
-    private void BgMoreTransparent_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        ApplyBackgroundOpacity(_settings.BackgroundOpacity - 0.08);
-        WidgetSettingsStore.Save(_settings);
-    }
-
-    private void BgReset_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-    {
-        ApplyBackgroundOpacity(0.66);
-        WidgetSettingsStore.Save(_settings);
-    }
 
     private void Exit_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -231,12 +304,12 @@ public partial class MainWindow : Window
             int cpuTemp;
             if (_providers.TryGetCpuTempC(out cpuTemp))
             {
-                _cpuText.Text = $"CPU {cpuTemp}°C";
+                _cpuText.Text = FormatTempText("CPU", cpuTemp);
                 _cpuText.Foreground = GetTempBrush(cpuTemp);
             }
             else
             {
-                _cpuText.Text = "CPU N/A";
+                _cpuText.Text = FormatNaText("CPU");
                 _cpuText.Foreground = GetNeutralBrush();
             }
         }
@@ -249,14 +322,65 @@ public partial class MainWindow : Window
         int temp;
         if (_providers.TryGetGpuTempC(out temp))
         {
-            _gpuText.Text = $"GPU {temp}°C";
+            _gpuText.Text = FormatTempText("GPU", temp);
             _gpuText.Foreground = GetTempBrush(temp);
         }
         else
         {
-            _gpuText.Text = "GPU N/A";
+            _gpuText.Text = FormatNaText("GPU");
             _gpuText.Foreground = GetNeutralBrush();
         }
+    }
+    private PixelPoint ClampToVisibleArea(PixelPoint desired)
+    {
+        var screen = Screens.ScreenFromPoint(desired) ?? Screens.Primary;
+        if (screen == null)
+            return desired;
+
+        var wa = screen.WorkingArea;
+
+        var w = (int)Math.Ceiling(Width);
+        var h = (int)Math.Ceiling(Bounds.Height);
+
+        // Prevent negative max if bounds are weird during early layout
+        var maxX = wa.X + wa.Width - Math.Max(1, w);
+        var maxY = wa.Y + wa.Height - Math.Max(1, h);
+
+        var x = Math.Clamp(desired.X, wa.X, maxX);
+        var y = Math.Clamp(desired.Y, wa.Y, maxY);
+
+        return new PixelPoint(x, y);
+    }
+
+    private PixelPoint GetCenteredOnCurrentScreen()
+    {
+        var screen = Screens.ScreenFromPoint(Position) ?? Screens.Primary;
+        if (screen == null)
+            return new PixelPoint(50, 50);
+
+        var wa = screen.WorkingArea;
+
+        var w = (int)Math.Ceiling(Width);
+        var h = (int)Math.Ceiling(Bounds.Height);
+
+        var x = wa.X + (wa.Width - w) / 2;
+        var y = wa.Y + (wa.Height - h) / 2;
+
+        return new PixelPoint(x, y);
+    }
+
+    private void SetPositionAndPersist(PixelPoint desired)
+    {
+        var clamped = ClampToVisibleArea(desired);
+
+        Position = clamped;
+
+        // This is the important bit: re-assert after the context menu closes/layout settles
+        Dispatcher.UIThread.Post(() => Position = clamped, DispatcherPriority.Background);
+
+        _settings.X = clamped.X;
+        _settings.Y = clamped.Y;
+        WidgetSettingsStore.Save(_settings);
     }
 
 }
