@@ -69,28 +69,47 @@
       </ContextMenu>
     </Border.ContextMenu>
 
-    <StackPanel Spacing="1">
+    <Grid>
+  <StackPanel Spacing="1">
 
-      <TextBlock x:Name="PlaceholderText"
-                 Text="Vitals"
-                 FontSize="22"
-                 FontWeight="SemiBold"
-                 Foreground="Gainsboro"
-                 IsVisible="False"/>
+    <TextBlock x:Name="PlaceholderText"
+               Text="Vitals"
+               FontSize="22"
+               FontWeight="SemiBold"
+               Foreground="Gainsboro"
+               IsVisible="False"/>
 
-      <TextBlock x:Name="CpuText"
-                 Text="CPU ..."
-                 FontSize="22"
-                 FontWeight="SemiBold"
-                 Foreground="Lime"/>
+    <TextBlock x:Name="CpuText"
+               Text="CPU ..."
+               FontSize="22"
+               FontWeight="SemiBold"
+               Foreground="Lime"/>
 
-      <TextBlock x:Name="GpuText"
-                 Text="GPU ..."
-                 FontSize="22"
-                 FontWeight="SemiBold"
-                 Foreground="Lime"/>
+    <TextBlock x:Name="GpuText"
+               Text="GPU ..."
+               FontSize="22"
+               FontWeight="SemiBold"
+               Foreground="Lime"/>
 
-    </StackPanel>
+  </StackPanel>
+
+  <!-- Tiny hotspot that stays clickable when locked -->
+  <Border x:Name="LockHotspot"
+          Width="14"
+          Height="14"
+          CornerRadius="7"
+          Background="#33FFFFFF"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Bottom"
+          IsVisible="False">
+    <TextBlock Text="●"
+               FontSize="10"
+               Foreground="#CC000000"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"/>
+  </Border>
+</Grid>
+
 
   </Border>
 </Window>

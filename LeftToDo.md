@@ -75,3 +75,6 @@ Sensors
 - Display which provider is active (debug only)
 - Optional “dock to corner” mode (top-right etc) with configurable margin
 - More robust Windows CPU temperature sources (still keep “no drivers shipped” rule)
+
+## Bugs
+- When locked windows behind should be able to be left clicked.

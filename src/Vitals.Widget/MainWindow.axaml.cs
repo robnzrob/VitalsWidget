@@ -6,6 +6,8 @@ using Avalonia.Media;
 using Avalonia.Threading;
 using System;
 using Vitals.Widget.Core.Providers;
+using System.Runtime.InteropServices;
+using Avalonia.VisualTree;
 
 namespace Vitals.Widget;
 
@@ -13,6 +15,17 @@ public partial class MainWindow : Window
 {
     private readonly WidgetSettings _settings;
     private readonly ProviderManager _providers;
+
+    //Lockspot
+    private Border? _lockHotspot;
+
+    // Size in DIPs (matches the XAML Width/Height)
+    private const double LockHotspotSize = 14;
+
+    // Win32: hook WndProc to return HTTRANSPARENT outside the hotspot when locked
+    private Win32Properties.CustomWndProcHookCallback? _win32WndProcHook;
+    private bool _win32HookAdded;
+    //End of Lockspot
 
     private Border? _rootBorder;
     private TextBlock? _cpuText;
@@ -47,8 +60,11 @@ public partial class MainWindow : Window
         _cpuText = this.FindControl<TextBlock>("CpuText");
         _gpuText = this.FindControl<TextBlock>("GpuText");
         _placeholderText = this.FindControl<TextBlock>("PlaceholderText");
+        _lockHotspot = this.FindControl<Border>("LockHotspot");
 
         _settings = WidgetSettingsStore.Load();
+
+        ApplyLockedClickThrough();
 
         _providers = new ProviderManager(_settings);
 
@@ -68,6 +84,13 @@ public partial class MainWindow : Window
         _timer.Start();
 
         UpdateReadings();
+
+        Opened += (_, __) =>
+{
+    EnsurePlatformHooks();
+    ApplyLockedClickThrough();
+};
+
 
         // Save settings when closing
         Closing += (_, __) =>
@@ -120,6 +143,10 @@ public partial class MainWindow : Window
         // Re-assert Position after the resize so Windows doesn't nudge us out of docked/overlay work areas.
         var p = Position;
         Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
+
+        if (_settings.IsLocked)
+            Dispatcher.UIThread.Post(ApplyLockedClickThrough, DispatcherPriority.Background);
+
     }
 
     private void ApplyFontSize(int value)
@@ -140,6 +167,10 @@ public partial class MainWindow : Window
         // Keep anchored after height recalculation.
         var p = Position;
         Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
+
+        if (_settings.IsLocked)
+            Dispatcher.UIThread.Post(ApplyLockedClickThrough, DispatcherPriority.Background);
+
     }
 
     private void ApplyWidgetWidth(int value)
@@ -157,6 +188,10 @@ public partial class MainWindow : Window
         // Width changes can also trigger work-area clamping in docked overlays.
         var p = Position;
         Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
+
+        if (_settings.IsLocked)
+            Dispatcher.UIThread.Post(ApplyLockedClickThrough, DispatcherPriority.Background);
+
     }
 
     private void Border_OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -206,6 +241,8 @@ public partial class MainWindow : Window
     private void Lock_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         _settings.IsLocked = !_settings.IsLocked;
+        ApplyLockedClickThrough();
+
         WidgetSettingsStore.Save(_settings);
 
         if (sender is MenuItem mi)
@@ -379,4 +416,187 @@ public partial class MainWindow : Window
         _settings.Y = clamped.Y;
         WidgetSettingsStore.Save(_settings);
     }
+
+    #region Lockspot Helpers
+    private void EnsurePlatformHooks()
+    {
+        if (_win32HookAdded)
+            return;
+
+        // Only needed on Windows
+        if (OperatingSystem.IsWindows())
+        {
+            _win32WndProcHook = Win32WndProcHook;
+            Win32Properties.AddWndProcHookCallback(this, _win32WndProcHook);
+            _win32HookAdded = true;
+        }
+    }
+
+    private void ApplyLockedClickThrough()
+    {
+        // Visual hint
+        if (_lockHotspot != null)
+            _lockHotspot.IsVisible = _settings.IsLocked;
+
+        // Linux X11: update input region so only the hotspot receives clicks when locked
+        if (OperatingSystem.IsLinux())
+            TryApplyX11InputShape();
+    }
+
+    // Windows: return HTTRANSPARENT outside hotspot when locked so clicks go to the window behind.
+    // Avalonia exposes a WndProc hook for this. :contentReference[oaicite:1]{index=1}
+    private IntPtr Win32WndProcHook(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        const uint WM_NCHITTEST = 0x0084;
+        const int HTTRANSPARENT = -1;
+
+        if (msg == WM_NCHITTEST && _settings.IsLocked)
+        {
+            int x = LowWord(lParam);
+            int y = HighWord(lParam);
+
+            // Convert screen pixel point -> client DIP point
+            var clientPt = this.PointToClient(new PixelPoint(x, y));
+
+            if (!IsInLockHotspot(clientPt))
+            {
+                handled = true;
+                return new IntPtr(HTTRANSPARENT);
+            }
+        }
+
+        return IntPtr.Zero;
+    }
+
+    private bool IsInLockHotspot(Point clientPt)
+    {
+        // bottom-left square of size LockHotspotSize
+        var s = LockHotspotSize;
+
+        // Bounds are in DIPs
+        var h = Bounds.Height;
+
+        return clientPt.X >= 0 && clientPt.X <= s
+            && clientPt.Y >= (h - s) && clientPt.Y <= h;
+    }
+
+    private static int LowWord(IntPtr value) => unchecked((short)((long)value & 0xFFFF));
+    private static int HighWord(IntPtr value) => unchecked((short)(((long)value >> 16) & 0xFFFF));
+
+
+    #region Linux
+    private void TryApplyX11InputShape()
+    {
+        var ph = TryGetPlatformHandle();
+        if (ph == null || ph.Handle == IntPtr.Zero)
+            return;
+
+        // Avalonia X11 typically exposes XID here. If not, bail (Wayland etc).
+        var desc = ph.HandleDescriptor ?? string.Empty;
+        if (desc.IndexOf("XID", StringComparison.OrdinalIgnoreCase) < 0 &&
+            desc.IndexOf("X11", StringComparison.OrdinalIgnoreCase) < 0)
+            return;
+
+        var xid = ph.Handle;
+
+        var dpy = XOpenDisplay(IntPtr.Zero);
+        if (dpy == IntPtr.Zero)
+            return;
+
+        try
+        {
+            if (XShapeQueryExtension(dpy, out _, out _) == 0)
+                return;
+
+            // Compute pixel sizes (X11 works in pixels)
+            var scale = RenderScaling;
+            var wPx = Math.Max(1, (int)Math.Round(Bounds.Width * scale));
+            var hPx = Math.Max(1, (int)Math.Round(Bounds.Height * scale));
+            var sPx = Math.Max(1, (int)Math.Round(LockHotspotSize * scale));
+
+            var region = XCreateRegion();
+            if (region == IntPtr.Zero)
+                return;
+
+            try
+            {
+                XRectangle rect;
+
+                if (_settings.IsLocked)
+                {
+                    // bottom-left hotspot only
+                    var y = Math.Max(0, hPx - sPx);
+                    rect = new XRectangle
+                    {
+                        x = 0,
+                        y = (short)Math.Min(short.MaxValue, y),
+                        width = (ushort)Math.Min(ushort.MaxValue, sPx),
+                        height = (ushort)Math.Min(ushort.MaxValue, sPx)
+                    };
+                }
+                else
+                {
+                    // full window clickable when unlocked
+                    rect = new XRectangle
+                    {
+                        x = 0,
+                        y = 0,
+                        width = (ushort)Math.Min(ushort.MaxValue, wPx),
+                        height = (ushort)Math.Min(ushort.MaxValue, hPx)
+                    };
+                }
+
+                XUnionRectWithRegion(ref rect, region, region);
+
+                // ShapeInput = 2, ShapeSet = 0 (standard XShape constants)
+                XShapeCombineRegion(dpy, xid, 2, 0, 0, region, 0);
+                XFlush(dpy);
+            }
+            finally
+            {
+                XDestroyRegion(region);
+            }
+        }
+        finally
+        {
+            XCloseDisplay(dpy);
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct XRectangle
+    {
+        public short x;
+        public short y;
+        public ushort width;
+        public ushort height;
+    }
+
+    [DllImport("libX11.so.6")]
+    private static extern IntPtr XOpenDisplay(IntPtr display);
+
+    [DllImport("libX11.so.6")]
+    private static extern int XCloseDisplay(IntPtr display);
+
+    [DllImport("libX11.so.6")]
+    private static extern int XFlush(IntPtr display);
+
+    [DllImport("libX11.so.6")]
+    private static extern IntPtr XCreateRegion();
+
+    [DllImport("libX11.so.6")]
+    private static extern int XDestroyRegion(IntPtr region);
+
+    [DllImport("libX11.so.6")]
+    private static extern void XUnionRectWithRegion(ref XRectangle rectangle, IntPtr srcRegion, IntPtr destRegion);
+
+    [DllImport("libXext.so.6")]
+    private static extern int XShapeQueryExtension(IntPtr dpy, out int eventBase, out int errorBase);
+
+    [DllImport("libXext.so.6")]
+    private static extern void XShapeCombineRegion(IntPtr dpy, IntPtr dest, int destKind, int xOff, int yOff, IntPtr region, int op);
+
+    #endregion
+
+    #endregion
 }
