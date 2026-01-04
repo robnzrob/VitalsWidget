@@ -20,11 +20,14 @@ public partial class MainWindow : Window
     private Border? _lockHotspot;
 
     // Size in DIPs (matches the XAML Width/Height)
-    private const double LockHotspotSize = 14;
+    private const double LockHotspotSize = 20;
 
     // Win32: hook WndProc to return HTTRANSPARENT outside the hotspot when locked
     private Win32Properties.CustomWndProcHookCallback? _win32WndProcHook;
     private bool _win32HookAdded;
+
+    private bool _lockspotReapplyQueued;
+
     //End of Lockspot
 
     private Border? _rootBorder;
@@ -90,6 +93,7 @@ public partial class MainWindow : Window
     EnsurePlatformHooks();
     ApplyLockedClickThrough();
 };
+        SizeChanged += (_, __) => QueueReapplyLockedClickThrough();
 
 
         // Save settings when closing
@@ -144,8 +148,8 @@ public partial class MainWindow : Window
         var p = Position;
         Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
 
-        if (_settings.IsLocked)
-            Dispatcher.UIThread.Post(ApplyLockedClickThrough, DispatcherPriority.Background);
+        QueueReapplyLockedClickThrough();
+
 
     }
 
@@ -168,8 +172,8 @@ public partial class MainWindow : Window
         var p = Position;
         Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
 
-        if (_settings.IsLocked)
-            Dispatcher.UIThread.Post(ApplyLockedClickThrough, DispatcherPriority.Background);
+        QueueReapplyLockedClickThrough();
+
 
     }
 
@@ -189,8 +193,8 @@ public partial class MainWindow : Window
         var p = Position;
         Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
 
-        if (_settings.IsLocked)
-            Dispatcher.UIThread.Post(ApplyLockedClickThrough, DispatcherPriority.Background);
+        QueueReapplyLockedClickThrough();
+
 
     }
 
@@ -483,6 +487,29 @@ public partial class MainWindow : Window
     private static int LowWord(IntPtr value) => unchecked((short)((long)value & 0xFFFF));
     private static int HighWord(IntPtr value) => unchecked((short)(((long)value >> 16) & 0xFFFF));
 
+    private void QueueReapplyLockedClickThrough()
+    {
+        if (!_settings.IsLocked)
+            return;
+
+        if (_lockspotReapplyQueued)
+            return;
+
+        _lockspotReapplyQueued = true;
+
+        // Run after layout/render so Bounds.Height is the final value
+        Dispatcher.UIThread.Post(() =>
+        {
+            _lockspotReapplyQueued = false;
+
+            ApplyLockedClickThrough();
+
+            // X11 input shape can still settle one tick later when SizeToContent is involved
+            if (OperatingSystem.IsLinux())
+                Dispatcher.UIThread.Post(ApplyLockedClickThrough, DispatcherPriority.Background);
+
+        }, DispatcherPriority.Render);
+    }
 
     #region Linux
     private void TryApplyX11InputShape()

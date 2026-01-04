@@ -26,6 +26,27 @@
       <Setter Property="CornerRadius" Value="8"/>
       <Setter Property="Opacity" Value="0.95"/>
     </Style>
+
+    <!-- Lock hotspot: clickable but hidden until hover -->
+<Style Selector="Border#LockHotspot">
+  <!-- Transparent keeps it hittable without being visible -->
+  <Setter Property="Background" Value="Transparent"/>
+  <Setter Property="Cursor" Value="Hand"/>
+</Style>
+
+<Style Selector="Border#LockHotspot TextBlock">
+  <Setter Property="Opacity" Value="0"/>
+</Style>
+
+<Style Selector="Border#LockHotspot:pointerover">
+  <!-- subtle hover glow -->
+  <Setter Property="Background" Value="#33FFFFFF"/>
+</Style>
+
+<Style Selector="Border#LockHotspot:pointerover TextBlock">
+  <Setter Property="Opacity" Value="1"/>
+</Style>
+
   </Window.Styles>
 
   <Border x:Name="RootBorder"
@@ -95,15 +116,15 @@
 
   <!-- Tiny hotspot that stays clickable when locked -->
   <Border x:Name="LockHotspot"
-          Width="14"
-          Height="14"
-          CornerRadius="7"
+          Width="20"
+          Height="20"
+          CornerRadius="10"
           Background="#33FFFFFF"
           HorizontalAlignment="Left"
           VerticalAlignment="Bottom"
           IsVisible="False">
     <TextBlock Text="●"
-               FontSize="10"
+               FontSize="16"
                Foreground="#CC000000"
                HorizontalAlignment="Center"
                VerticalAlignment="Center"/>
