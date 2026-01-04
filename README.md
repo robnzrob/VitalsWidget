@@ -1,82 +1,85 @@
 # VitalsWidget
 
-Tiny always-on-top widget showing CPU and GPU temperatures (minimal, glanceable, low overhead).
+Tiny always-on-top widget showing CPU and GPU temperatures.
+Minimal, glanceable, no nonsense.
 
-This is primarily built for personal use on:
+## Why it exists
 
-- Windows 10/11
-- Linux Mint (later)
+On Linux I couldn’t find a truly simple “CPU/GPU temp overlay” that behaves like a tiny widget.
+I wanted something I can park on a side monitor and trust at a glance, similar to having a temp display on a GPU.
 
-## What it looks like (v1)
-
-Two lines only:
-
-- CPU 55°C
-- GPU 45°C
-
-Each line is color-coded by temperature (green -> amber -> red) so you can see issues instantly.
-
-## Core rules (design constraints)
-
-- No kernel drivers shipped or installed by this project
-- Read-only telemetry only (no system changes)
-- No auto-updater
-- No telemetry / analytics / “phone home”
-- Minimal UI (no wasted space)
-
-## Features (v1 scope)
+## Features
 
 Widget
-
 - Always on top
-- Draggable
-- Lock/unlock position
-- Adjustable transparency
-- Tray icon menu:
-  - Show/hide
-  - Lock/unlock
-  - Opacity presets
-  - Exit
+- Transparent window with subtle background
+- Drag to move (when unlocked)
+- Lock / unlock position
+- Show CPU and Show GPU toggles
+- Settings window:
+  - Font size
+  - Width
+  - Background opacity
+  - Celsius / Fahrenheit
+  - Optional units suffix (°C / °F)
+  - Optional labels (CPU / GPU)
 
-Sensors (Windows v1)
+Behaviour
+- Remembers position and settings
+- Supports being positioned very close to the edge of the screen
+- Color thresholds (simple and fast to read):
+  - <= 75: normal
+  - 76–89: warning
+  - >= 90: hot
 
-- CPU temperature (best available source, otherwise show N/A)
-- GPU temperature:
-  - NVIDIA via NVML
-  - AMD via ADLX
+## Platforms
 
-Sensors (Linux later)
+- Windows 10/11
+- Linux (tested on Linux Mint Cinnamon X11)
 
-- CPU temp via /sys and hwmon
-- AMD GPU temp via /sys/class/drm and hwmon
+## Sensors and providers
 
-## Project structure (planned)
+Goal: use existing system interfaces only.
+No drivers shipped or installed by this project.
 
-- src/Vitals.Widget
-  Avalonia UI app (stable, minimal changes long term)
-- src/Vitals.Shared (later)
-  Snapshot contract (DTOs) shared between UI and sensor host
-- src/Vitals.Host.Windows (later)
-  Sensor host for Windows
-- src/Vitals.Host.Linux (later)
-  Sensor host for Linux
+Tested
+- NVIDIA GPU: tested on RTX 3070
 
-Note: v1 can start with hard-coded test temperatures to finish the UI first, then wire real sensors.
+Implemented, not fully tested yet
+- AMD GPU provider (planned test on RX 7900 XT)
+- Intel GPU provider (untested)
+- Windows CPU via WMI (basic, may show N/A on some systems)
+- Linux CPU via hwmon
 
-## Build and run (Windows)
+If a sensor can’t be read, the widget shows `N/A`.
 
-From repo root:
+## Install
 
-dotnet run --project src/Vitals.Widget
+VitalsWidget is portable. No installer.
 
-## Roadmap (pragmatic)
+Windows
+1) Download the zip from GitHub Releases
+2) Extract anywhere
+3) Run `Vitals.Widget.exe`
 
-Phase 1
+Linux
+1) Download the tar.gz from GitHub Releases
+2) Extract anywhere
+3) Run `./Vitals.Widget`
 
-- Create the widget UI
-- Hard-coded CPU/GPU temps to validate layout, colors, tray, lock, opacity
+## Autostart
 
-Phase 2
+Linux (simple)
+Use your desktop’s Startup Applications and point it at the `Vitals.Widget` binary.
 
-- Add real Windows sensors (NVIDIA NVML, AMD ADLX)
-- Grac
+Linux (manual autostart)
+Create a file at:
+`~/.config/autostart/vitalswidget.desktop`
+
+Example:
+```ini
+[Desktop Entry]
+Type=Application
+Name=VitalsWidget
+Exec=/home/youruser/Apps/VitalsWidget/Vitals.Widget
+X-GNOME-Autostart-enabled=true

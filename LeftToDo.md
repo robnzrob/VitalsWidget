@@ -25,80 +25,53 @@ cp -a ./publish/linux-x64/. /home/robert/Apps/VitalsWidget/
 chmod +x /home/robert/Apps/VitalsWidget/Vitals.Widget
 
 
-## VitalsWidget
+## Current status
 
-Tiny always-on-top widget showing CPU and GPU temperatures (minimal, glanceable, low overhead).
+Working
+- Always-on-top widget
+- Drag when unlocked
+- Lock/unlock position
+- Show CPU / Show GPU toggles
+- Settings window (font size, width, opacity, units, labels)
+- Position persistence
+- Edge positioning is less strict (keeps a tiny part visible so you can always grab it)
 
-Target platforms:
-- Windows 10/11
-- Linux Mint (later)
+Sensors
+- NVIDIA GPU working (tested on RTX 3070)
+- Windows CPU WMI provider implemented (may show N/A depending on hardware)
+- Linux hwmon providers implemented (test coverage varies by hardware/driver)
 
-## Current status (working)
+## Next tests
 
-GUI:
-- Compact always-on-top window, rounded background, no decorations
-- Drag to move when unlocked
-- Right-click menu:
-  - Lock / Unlock position
-  - Show CPU / Show GPU toggles (instant resize)
-  - Background opacity controls (more solid / more transparent / reset)
-  - Reset position
-  - Exit
-- Auto height sizing:
-  - Shrinks/grows based on visible lines
-  - If both CPU and GPU are hidden, shows a placeholder line (`Vitals`)
-  - Extra fix for docked overlays (eg SidebarDiagnostics) so toggling lines doesn’t “jump” the window
+- AMD GPU test (RX 7900 XT)
+  - Windows provider
+  - Linux provider
+- Intel GPU test (Arc machine if possible)
+- Confirm behaviour on multi-monitor setups and different Linux desktops
 
-Settings (persisted to JSON):
-- Window position (X/Y)
-- Locked state
-- Background opacity
-- ShowCpu / ShowGpu
-- Provider order lists for CPU/GPU per OS
+## Release packaging
 
-Sensor skeleton:
-- Provider interfaces + ProviderManager (OS detection, ordered provider selection, provider caching)
-- Windows GPU providers:
-  - NVIDIA NVML (working)
-  - AMD ADL best-effort (implemented, test when AMD card installed)
-  - Intel WMI best-effort (implemented, test on Arc machine)
-- Windows CPU provider:
-  - WMI best-effort (implemented, may show N/A depending on hardware)
-- Linux providers (best-effort, test later):
-  - CPU hwmon
-  - AMD GPU hwmon
-  - NVIDIA GPU hwmon
+- Create dist output folders
+  - dist/win-x64
+  - dist/linux-x64
+- Produce archives
+  - dist/VitalsWidget-win-x64.zip
+  - dist/VitalsWidget-linux-x64.tar.gz
+- Generate SHA256 hashes for release artifacts
+- Add GitHub Release notes template
 
-Display:
-- CPU/GPU show temp when available, otherwise `N/A`
-- Simple green → amber → red scale when a real temperature exists
-- `N/A` uses a neutral colour
-- Text stays fully opaque (only background is translucent)
+## Docs
 
-## Remaining for “GUI v1 complete”
+- Update README with:
+  - tested hardware list
+  - clear install steps
+  - autostart steps
+  - where settings.json is stored
+  - “no telemetry / no network” statement
+- Add screenshots (Windows and Linux)
 
-1) Structure tidy-up
-- Clean up provider folder layout so Windows vs Linux is obvious
-  - Preferred: `Cpu/Windows`, `Cpu/Linux`, `Gpu/Windows`, `Gpu/Linux`
-- Do a quick scan for naming consistency (files and classes)
+## Nice to have
 
-2) Code quality pass
-- Add short “why” comments to:
-  - ProviderManager (why caching, why ordered keys)
-  - Each provider (what it relies on, why it may return N/A)
-  - The post-resize position reassert (docked overlay work-area behaviour)
-- Keep the Problems panel clean (no warnings)
-
-3) Packaging hooks (GUI scope)
-Add README notes for publishing:
-- Windows:
-  - publish command
-  - output folder: `dist/win-x64`
-- Linux:
-  - publish command
-  - output folder: `dist/linux-x64`
-
-## Nice-to-have (not required for v1)
-
-- Context menu: “Reset to defaults” (writes default settings.json)
-- Debug-only indicator of which CPU/GPU provider is currently active (useful for Linux testing)
+- Display which provider is active (debug only)
+- Optional “dock to corner” mode (top-right etc) with configurable margin
+- More robust Windows CPU temperature sources (still keep “no drivers shipped” rule)
