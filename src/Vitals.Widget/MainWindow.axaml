@@ -30,7 +30,7 @@
 
   <Border x:Name="RootBorder"
           CornerRadius="10"
-          Padding="10,8"
+          Padding="6,4"
           Background="#00000000"
           PointerPressed="Border_OnPointerPressed">
 
@@ -69,7 +69,7 @@
       </ContextMenu>
     </Border.ContextMenu>
 
-    <StackPanel Spacing="6">
+    <StackPanel Spacing="1">
 
       <TextBlock x:Name="PlaceholderText"
                  Text="Vitals"

@@ -330,15 +330,21 @@ public partial class MainWindow : Window
 
         var wa = screen.WorkingArea;
 
+        const int minVisible = 2;
+
         var w = (int)Math.Ceiling(Width);
         var h = (int)Math.Ceiling(Bounds.Height);
 
         // Prevent negative max if bounds are weird during early layout
-        var maxX = wa.X + wa.Width - Math.Max(1, w);
-        var maxY = wa.Y + wa.Height - Math.Max(1, h);
+        var minX = wa.X - w + minVisible;
+        var maxX = wa.X + wa.Width - minVisible;
 
-        var x = Math.Clamp(desired.X, wa.X, maxX);
-        var y = Math.Clamp(desired.Y, wa.Y, maxY);
+        var minY = wa.Y - h + minVisible;
+        var maxY = wa.Y + wa.Height - minVisible;
+
+        var x = Math.Clamp(desired.X, minX, maxX);
+        var y = Math.Clamp(desired.Y, minY, maxY);
+
 
         return new PixelPoint(x, y);
     }
