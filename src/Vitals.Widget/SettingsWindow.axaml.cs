@@ -25,6 +25,8 @@ public partial class SettingsWindow : Window
 
     private ComboBox _unitsCombo = null!;
     private CheckBox _showLabelsCheckBox = null!;
+    private CheckBox _showUnitsCheckBox = null!;
+
 
 
 
@@ -65,9 +67,15 @@ public partial class SettingsWindow : Window
         _showLabelsCheckBox = this.FindControl<CheckBox>("ShowLabelsCheckBox")
             ?? throw new InvalidOperationException("Missing control: ShowLabelsCheckBox");
 
+        _showUnitsCheckBox = this.FindControl<CheckBox>("ShowUnitsCheckBox")
+            ?? throw new InvalidOperationException("Missing control: ShowUnitsCheckBox");
+
+
         // Hook events after controls exist
         _unitsCombo.SelectionChanged += UnitsCombo_OnSelectionChanged;
         _showLabelsCheckBox.IsCheckedChanged += ShowLabelsCheckBox_OnChanged;
+        _showUnitsCheckBox.IsCheckedChanged += ShowUnitsCheckBox_OnChanged;
+
 
         // Hook events AFTER we have controls, to avoid ValueChanged firing during XAML load
         _fontSizeSlider.ValueChanged += FontSizeSlider_OnValueChanged;
@@ -80,6 +88,8 @@ public partial class SettingsWindow : Window
 
         _unitsCombo.SelectedIndex = _settings.UseFahrenheit ? 1 : 0;
         _showLabelsCheckBox.IsChecked = _settings.ShowLabels;
+        _showUnitsCheckBox.IsChecked = _settings.ShowUnits;
+
 
 
         UpdateLabels();
@@ -108,6 +118,15 @@ public partial class SettingsWindow : Window
         if (_isInitializing) return;
 
         _settings.ShowLabels = _showLabelsCheckBox.IsChecked == true;
+        WidgetSettingsStore.Save(_settings);
+
+        _applyToMainWindow();
+    }
+    private void ShowUnitsCheckBox_OnChanged(object? sender, RoutedEventArgs e)
+    {
+        if (_isInitializing) return;
+
+        _settings.ShowUnits = _showUnitsCheckBox.IsChecked == true;
         WidgetSettingsStore.Save(_settings);
 
         _applyToMainWindow();
@@ -152,6 +171,7 @@ public partial class SettingsWindow : Window
 
         _settings.UseFahrenheit = false;
         _settings.ShowLabels = true;
+        _settings.ShowUnits = true;
 
         _settings.FontSize = 22;
         _settings.WidgetWidth = 130;

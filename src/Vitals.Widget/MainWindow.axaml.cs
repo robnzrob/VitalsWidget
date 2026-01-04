@@ -7,7 +7,6 @@ using Avalonia.Threading;
 using System;
 using Vitals.Widget.Core.Providers;
 
-
 namespace Vitals.Widget;
 
 public partial class MainWindow : Window
@@ -35,7 +34,6 @@ public partial class MainWindow : Window
 
     private const double BackgroundStep = 0.08;
 
-
     private void InitializeComponent()
     {
         AvaloniaXamlLoader.Load(this);
@@ -54,17 +52,13 @@ public partial class MainWindow : Window
 
         _providers = new ProviderManager(_settings);
 
-
-
         // Apply saved window position
         Position = ClampToVisibleArea(new PixelPoint(_settings.X, _settings.Y));
-
 
         // Apply saved background opacity
         ApplyBackgroundOpacity(_settings.BackgroundOpacity);
         ApplyWidgetWidth(_settings.WidgetWidth);
         ApplyFontSize(_settings.FontSize);
-
 
         // Apply CPU/GPU visibility immediately (drives auto height via SizeToContent)
         ApplyLineVisibility();
@@ -82,8 +76,6 @@ public partial class MainWindow : Window
             _settings.Y = Position.Y;
             WidgetSettingsStore.Save(_settings);
             _providers.Dispose();
-
-
         };
 
         this.KeyDown += (_, e) =>
@@ -92,8 +84,6 @@ public partial class MainWindow : Window
                 Close();
         };
     }
-
-
 
     private void ApplyBackgroundOpacity(double value)
     {
@@ -131,13 +121,12 @@ public partial class MainWindow : Window
         var p = Position;
         Dispatcher.UIThread.Post(() => Position = p, DispatcherPriority.Background);
     }
+
     private void ApplyFontSize(int value)
     {
         // Clamp to sensible range for a tiny widget.
         if (value < MinFontSize) value = MinFontSize;
         if (value > MaxFontSize) value = MaxFontSize;
-
-
 
         _settings.FontSize = value;
 
@@ -178,6 +167,7 @@ public partial class MainWindow : Window
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
     }
+
     private void Settings_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         var win = new SettingsWindow(_settings, ApplyAllVisualSettings);
@@ -190,6 +180,7 @@ public partial class MainWindow : Window
         ApplyWidgetWidth(_settings.WidgetWidth);
         ApplyBackgroundOpacity(_settings.BackgroundOpacity);
     }
+
     private string FormatTempText(string label, int tempC)
     {
         var showLabels = _settings.ShowLabels;
@@ -197,17 +188,20 @@ public partial class MainWindow : Window
         if (_settings.UseFahrenheit)
         {
             var tempF = (int)Math.Round((tempC * 9.0 / 5.0) + 32.0);
-            return showLabels ? $"{label} {tempF}°F" : $"{tempF}°F";
+            var suffix = _settings.ShowUnits ? "°F" : "°";
+            return showLabels ? $"{label} {tempF}{suffix}" : $"{tempF}{suffix}";
         }
-
-        return showLabels ? $"{label} {tempC}°C" : $"{tempC}°C";
+        else
+        {
+            var suffix = _settings.ShowUnits ? "°C" : "°";
+            return showLabels ? $"{label} {tempC}{suffix}" : $"{tempC}{suffix}";
+        }
     }
 
     private string FormatNaText(string label)
     {
         return _settings.ShowLabels ? $"{label} N/A" : "N/A";
     }
-
 
     private void Lock_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -247,7 +241,6 @@ public partial class MainWindow : Window
         _settings.IsLocked = false;
 
         SetPositionAndPersist(GetCenteredOnCurrentScreen());
-
     }
 
     private void ContextMenu_OnOpened(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -270,7 +263,6 @@ public partial class MainWindow : Window
         if (showGpuItem != null)
             showGpuItem.IsChecked = _settings.ShowGpu;
     }
-
 
     private void Exit_OnClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
@@ -295,7 +287,6 @@ public partial class MainWindow : Window
         return Brushes.OrangeRed;
     }
 
-
     private void UpdateReadings()
     {
         // CPU 
@@ -314,7 +305,6 @@ public partial class MainWindow : Window
             }
         }
 
-
         // GPU
         if (_gpuText == null || !_settings.ShowGpu)
             return;
@@ -331,6 +321,7 @@ public partial class MainWindow : Window
             _gpuText.Foreground = GetNeutralBrush();
         }
     }
+
     private PixelPoint ClampToVisibleArea(PixelPoint desired)
     {
         var screen = Screens.ScreenFromPoint(desired) ?? Screens.Primary;
@@ -382,5 +373,4 @@ public partial class MainWindow : Window
         _settings.Y = clamped.Y;
         WidgetSettingsStore.Save(_settings);
     }
-
 }

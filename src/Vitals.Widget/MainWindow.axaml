@@ -13,7 +13,7 @@
         Topmost="True"
         TransparencyLevelHint="Transparent"
         Background="#00000000">
-          <Window.Styles>
+  <Window.Styles>
     <!-- Primary/secondary buttons for the dialog footer -->
     <Style Selector="Button.primary">
       <Setter Property="FontWeight" Value="SemiBold"/>
@@ -27,7 +27,6 @@
       <Setter Property="Opacity" Value="0.95"/>
     </Style>
   </Window.Styles>
-
 
   <Border x:Name="RootBorder"
           CornerRadius="10"
@@ -43,14 +42,13 @@
                   ToggleType="CheckBox"
                   Click="Lock_OnClick"
                   />
-                  
 
         <Separator/>
 
         <MenuItem x:Name="ShowCpuMenuItem"
                   Header="Show CPU"
                   ToggleType="CheckBox"
-                  
+
                   Click="ShowCpu_OnClick"/>
 
         <MenuItem x:Name="ShowGpuMenuItem"
@@ -58,12 +56,11 @@
                   ToggleType="CheckBox"
                   Click="ShowGpu_OnClick"/>
 
-        <Separator/>       
+        <Separator/>
 
         <MenuItem Header="Reset position" Click="ResetPosition_OnClick"/>
         <Separator/>
-<MenuItem Header="Settings..." Click="Settings_OnClick"/>
-
+        <MenuItem Header="Settings..." Click="Settings_OnClick"/>
 
         <Separator/>
 

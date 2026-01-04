@@ -10,6 +10,19 @@ dotnet run --project src/Vitals.Widget
 To Publish (WIndows)
 dotnet publish .\src\Vitals.Widget\Vitals.Widget.csproj -c Release -r win-x64 --self-contained false -o "C:\Work\VitalsWidget\publish\win-x64" -v minimal
 
+to publish Linux
+cd /home/robert/Work/VitalsWidget
+
+dotnet publish ./src/Vitals.Widget/Vitals.Widget.csproj \
+  -c Release -r linux-x64 --self-contained false \
+  -o ./publish/linux-x64
+
+chmod +x ./publish/linux-x64/Vitals.Widget
+
+mkdir -p /home/robert/Apps/VitalsWidget
+cp -a ./publish/linux-x64/. /home/robert/Apps/VitalsWidget/
+
+chmod +x /home/robert/Apps/VitalsWidget/Vitals.Widget
 
 
 ## VitalsWidget

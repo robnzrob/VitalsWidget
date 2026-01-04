@@ -13,7 +13,7 @@
                FontWeight="SemiBold"/>
 
     <Grid ColumnDefinitions="Auto,*,Auto"
-          RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
           ColumnSpacing="12"
           RowSpacing="12">
 
@@ -69,17 +69,27 @@
 </ComboBox>
 
 <TextBlock Grid.Row="3" Grid.Column="2"/>
-
-
 <TextBlock Grid.Row="4" Grid.Column="0"
-           Text="Show labels"
+           Text="Show units"
            VerticalAlignment="Center"/>
 
 <CheckBox Grid.Row="4" Grid.Column="1"
+          x:Name="ShowUnitsCheckBox"
+          Content="Show °C / °F suffix"/>
+
+<TextBlock Grid.Row="4" Grid.Column="2"/>
+
+
+<TextBlock Grid.Row="5" Grid.Column="0"
+           Text="Show labels"
+           VerticalAlignment="Center"/>
+
+<CheckBox Grid.Row="5" Grid.Column="1"
           x:Name="ShowLabelsCheckBox"
           Content="CPU / GPU text"/>
 
-<TextBlock Grid.Row="4" Grid.Column="2"/>
+<TextBlock Grid.Row="5" Grid.Column="2"/>
+
           
 
       <Slider Grid.Row="2" Grid.Column="1"

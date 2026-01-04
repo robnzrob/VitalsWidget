@@ -10,6 +10,8 @@ namespace Vitals.Widget
         // Display options
         public bool UseFahrenheit { get; set; } = false;   // default Celsius
         public bool ShowLabels { get; set; } = true;       // show "CPU"/"GPU" text
+        public bool ShowUnits { get; set; } = true;        // show the C/F suffix (default on)
+
 
         public int FontSize { get; set; } = 22;
 
@@ -109,6 +111,8 @@ namespace Vitals.Widget
             {
                 UseFahrenheit = loaded.UseFahrenheit,
                 ShowLabels = loaded.ShowLabels,
+                ShowUnits = loaded.ShowUnits,
+
 
                 X = loaded.X,
                 Y = loaded.Y,
