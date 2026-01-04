@@ -27,25 +27,42 @@
       <Setter Property="Opacity" Value="0.95"/>
     </Style>
 
-    <!-- Lock hotspot: clickable but hidden until hover -->
+    <!-- Lock hotspot: clickable but hidden unless hint or hover -->
 <Style Selector="Border#LockHotspot">
-  <!-- Transparent keeps it hittable without being visible -->
+  <!-- Transparent keeps it hittable even when visually hidden -->
   <Setter Property="Background" Value="Transparent"/>
+  <Setter Property="BorderBrush" Value="Transparent"/>
+  <Setter Property="BorderThickness" Value="0"/>
   <Setter Property="Cursor" Value="Hand"/>
 </Style>
 
+<!-- Default: hide the inner dot -->
 <Style Selector="Border#LockHotspot TextBlock">
   <Setter Property="Opacity" Value="0"/>
 </Style>
 
+<!-- Timed hint state (shown for ~10s after changes) -->
+<Style Selector="Border#LockHotspot.hint">
+  <Setter Property="Background" Value="#22FFFFFF"/>
+  <Setter Property="BorderBrush" Value="#55FFFFFF"/>
+  <Setter Property="BorderThickness" Value="1"/>
+</Style>
+
+<Style Selector="Border#LockHotspot.hint TextBlock">
+  <Setter Property="Opacity" Value="0.55"/>
+</Style>
+
+<!-- Hover always wins: show clearly -->
 <Style Selector="Border#LockHotspot:pointerover">
-  <!-- subtle hover glow -->
   <Setter Property="Background" Value="#33FFFFFF"/>
+  <Setter Property="BorderBrush" Value="#88FFFFFF"/>
+  <Setter Property="BorderThickness" Value="1"/>
 </Style>
 
 <Style Selector="Border#LockHotspot:pointerover TextBlock">
   <Setter Property="Opacity" Value="1"/>
 </Style>
+
 
   </Window.Styles>
 
@@ -118,13 +135,12 @@
   <Border x:Name="LockHotspot"
           Width="20"
           Height="20"
-          CornerRadius="10"
-          Background="#33FFFFFF"
+          CornerRadius="10"          
           HorizontalAlignment="Left"
           VerticalAlignment="Bottom"
           IsVisible="False">
     <TextBlock Text="●"
-               FontSize="16"
+               FontSize="10"
                Foreground="#CC000000"
                HorizontalAlignment="Center"
                VerticalAlignment="Center"/>

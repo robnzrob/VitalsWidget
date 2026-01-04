@@ -28,6 +28,9 @@ public partial class MainWindow : Window
 
     private bool _lockspotReapplyQueued;
 
+    private DispatcherTimer? _lockHintTimer;
+    private static readonly TimeSpan LockHotspotHintDuration = TimeSpan.FromSeconds(5);
+
     //End of Lockspot
 
     private Border? _rootBorder;
@@ -150,6 +153,7 @@ public partial class MainWindow : Window
 
         QueueReapplyLockedClickThrough();
 
+        ShowLockHotspotHint();
 
     }
 
@@ -218,6 +222,8 @@ public partial class MainWindow : Window
         ApplyFontSize(_settings.FontSize);
         ApplyWidgetWidth(_settings.WidgetWidth);
         ApplyBackgroundOpacity(_settings.BackgroundOpacity);
+        ShowLockHotspotHint();
+
     }
 
     private string FormatTempText(string label, int tempC)
@@ -246,6 +252,10 @@ public partial class MainWindow : Window
     {
         _settings.IsLocked = !_settings.IsLocked;
         ApplyLockedClickThrough();
+
+        if (_settings.IsLocked)
+            ShowLockHotspotHint();
+
 
         WidgetSettingsStore.Save(_settings);
 
@@ -442,6 +452,11 @@ public partial class MainWindow : Window
         if (_lockHotspot != null)
             _lockHotspot.IsVisible = _settings.IsLocked;
 
+        if (_settings.IsLocked)
+            ShowLockHotspotHint();
+        else
+            ClearLockHotspotHint();
+
         // Linux X11: update input region so only the hotspot receives clicks when locked
         if (OperatingSystem.IsLinux())
             TryApplyX11InputShape();
@@ -509,6 +524,54 @@ public partial class MainWindow : Window
                 Dispatcher.UIThread.Post(ApplyLockedClickThrough, DispatcherPriority.Background);
 
         }, DispatcherPriority.Render);
+    }
+    private void ShowLockHotspotHint()
+    {
+        if (!_settings.IsLocked || _lockHotspot == null)
+            return;
+
+        SetLockHotspotHintClass(true);
+
+        if (_lockHintTimer == null)
+        {
+            _lockHintTimer = new DispatcherTimer();
+            _lockHintTimer.Tick += (_, __) =>
+            {
+                _lockHintTimer!.Stop();
+                SetLockHotspotHintClass(false);
+            };
+        }
+
+        _lockHintTimer.Interval = LockHotspotHintDuration;
+        _lockHintTimer.Stop();
+        _lockHintTimer.Start();
+    }
+
+    private void ClearLockHotspotHint()
+    {
+        if (_lockHintTimer != null)
+            _lockHintTimer.Stop();
+
+        SetLockHotspotHintClass(false);
+    }
+
+    private void SetLockHotspotHintClass(bool on)
+    {
+        if (_lockHotspot == null)
+            return;
+
+        const string cls = "hint";
+
+        if (on)
+        {
+            if (!_lockHotspot.Classes.Contains(cls))
+                _lockHotspot.Classes.Add(cls);
+        }
+        else
+        {
+            if (_lockHotspot.Classes.Contains(cls))
+                _lockHotspot.Classes.Remove(cls);
+        }
     }
 
     #region Linux
