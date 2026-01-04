@@ -35,7 +35,7 @@ Working
 - Settings window (font size, width, opacity, units, labels)
 - Position persistence
 - Edge positioning is less strict (keeps a tiny part visible so you can always grab it)
-
+- Added Lockspot for when widget is locked in the bottom left corner, only visible when hovered over
 Sensors
 - NVIDIA GPU working (tested on RTX 3070)
 - Windows CPU WMI provider implemented (may show N/A depending on hardware)
@@ -76,5 +76,3 @@ Sensors
 - Optional “dock to corner” mode (top-right etc) with configurable margin
 - More robust Windows CPU temperature sources (still keep “no drivers shipped” rule)
 
-## Bugs
-- When locked windows behind should be able to be left clicked.

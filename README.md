@@ -14,7 +14,7 @@ Widget
 - Always on top
 - Transparent window with subtle background
 - Drag to move (when unlocked)
-- Lock / unlock position
+- Lock / unlock position (Added Lockspot for when widget is locked in the bottom left corner, only visible when hovered over)
 - Show CPU and Show GPU toggles
 - Settings window:
   - Font size
