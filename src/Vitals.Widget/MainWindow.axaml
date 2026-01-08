@@ -108,7 +108,7 @@
     </Border.ContextMenu>
 
     <Grid>
-  <StackPanel Spacing="1">
+  <StackPanel Spacing="1" VerticalAlignment="Bottom">
 
     <TextBlock x:Name="PlaceholderText"
                Text="Vitals"
