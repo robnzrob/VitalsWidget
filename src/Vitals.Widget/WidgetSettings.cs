@@ -29,16 +29,21 @@ namespace Vitals.Widget
 
         public bool IsLocked { get; set; } = false;
 
+        // Windows only: if LibreHardwareMonitor is running, read the sensors it
+        // publishes to WMI (root\LibreHardwareMonitor). We ship no third-party code;
+        // this only lights up when the user chooses to run LHM themselves.
+        public bool UseLhmWmiBridge { get; set; } = true;
+
         // Provider order lists.
         // Important: these arrays also act as the "allow list" of provider keys this build knows about.
         // On load we will:
         // - keep user order for known keys
         // - remove unknown keys (including providers removed from the app)
         // - append new defaults the user doesn't yet have
-        public string[] GpuProviderOrderWindows { get; set; } = new[] { "nvidia-nvml", "amd-adlx", "intel" };
+        public string[] GpuProviderOrderWindows { get; set; } = new[] { "nvidia-nvml", "amd-adlx", "intel", "windows-gpu-lhm-wmi" };
         public string[] GpuProviderOrderLinux { get; set; } = new[] { "linux-nvidia-smi", "linux-amd-hwmon", "linux-nvidia-hwmon" };
 
-        public string[] CpuProviderOrderWindows { get; set; } = new[] { "windows-cpu-wmi" };
+        public string[] CpuProviderOrderWindows { get; set; } = new[] { "windows-cpu-wmi", "windows-cpu-lhm-wmi" };
         public string[] CpuProviderOrderLinux { get; set; } = new[] { "linux-cpu-hwmon" };
     }
 
@@ -122,6 +127,7 @@ namespace Vitals.Widget
 
                 BackgroundOpacity = loaded.BackgroundOpacity,
                 IsLocked = loaded.IsLocked,
+                UseLhmWmiBridge = loaded.UseLhmWmiBridge,
                 FontSize = loaded.FontSize,
                 WidgetWidth = loaded.WidgetWidth,
 

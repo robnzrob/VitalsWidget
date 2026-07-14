@@ -26,6 +26,7 @@ public partial class SettingsWindow : Window
     private ComboBox _unitsCombo = null!;
     private CheckBox _showLabelsCheckBox = null!;
     private CheckBox _showUnitsCheckBox = null!;
+    private CheckBox _lhmBridgeCheckBox = null!;
 
 
 
@@ -70,11 +71,24 @@ public partial class SettingsWindow : Window
         _showUnitsCheckBox = this.FindControl<CheckBox>("ShowUnitsCheckBox")
             ?? throw new InvalidOperationException("Missing control: ShowUnitsCheckBox");
 
+        _lhmBridgeCheckBox = this.FindControl<CheckBox>("LhmBridgeCheckBox")
+            ?? throw new InvalidOperationException("Missing control: LhmBridgeCheckBox");
+
+        var lhmBridgeLabel = this.FindControl<TextBlock>("LhmBridgeLabel")
+            ?? throw new InvalidOperationException("Missing control: LhmBridgeLabel");
+
+        // The LHM WMI bridge only exists on Windows; hide the row elsewhere.
+        if (!OperatingSystem.IsWindows())
+        {
+            _lhmBridgeCheckBox.IsVisible = false;
+            lhmBridgeLabel.IsVisible = false;
+        }
 
         // Hook events after controls exist
         _unitsCombo.SelectionChanged += UnitsCombo_OnSelectionChanged;
         _showLabelsCheckBox.IsCheckedChanged += ShowLabelsCheckBox_OnChanged;
         _showUnitsCheckBox.IsCheckedChanged += ShowUnitsCheckBox_OnChanged;
+        _lhmBridgeCheckBox.IsCheckedChanged += LhmBridgeCheckBox_OnChanged;
 
 
         // Hook events AFTER we have controls, to avoid ValueChanged firing during XAML load
@@ -89,6 +103,7 @@ public partial class SettingsWindow : Window
         _unitsCombo.SelectedIndex = _settings.UseFahrenheit ? 1 : 0;
         _showLabelsCheckBox.IsChecked = _settings.ShowLabels;
         _showUnitsCheckBox.IsChecked = _settings.ShowUnits;
+        _lhmBridgeCheckBox.IsChecked = _settings.UseLhmWmiBridge;
 
 
 
@@ -132,6 +147,18 @@ public partial class SettingsWindow : Window
         _applyToMainWindow();
     }
 
+    private void LhmBridgeCheckBox_OnChanged(object? sender, RoutedEventArgs e)
+    {
+        if (_isInitializing) return;
+
+        _settings.UseLhmWmiBridge = _lhmBridgeCheckBox.IsChecked == true;
+        WidgetSettingsStore.Save(_settings);
+
+        // Provider order/registration is rebuilt from settings, so the main
+        // window needs to recreate its ProviderManager to pick this up.
+        _applyToMainWindow();
+    }
+
     private void FontSizeSlider_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
         if (_isInitializing) return;
@@ -172,6 +199,7 @@ public partial class SettingsWindow : Window
         _settings.UseFahrenheit = false;
         _settings.ShowLabels = true;
         _settings.ShowUnits = true;
+        _settings.UseLhmWmiBridge = true;
 
         _settings.FontSize = 22;
         _settings.WidgetWidth = 130;
@@ -180,6 +208,7 @@ public partial class SettingsWindow : Window
         _fontSizeSlider.Value = _settings.FontSize;
         _widthSlider.Value = _settings.WidgetWidth;
         _opacitySlider.Value = _settings.BackgroundOpacity;
+        _lhmBridgeCheckBox.IsChecked = _settings.UseLhmWmiBridge;
 
         WidgetSettingsStore.Save(_settings);
 

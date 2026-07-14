@@ -13,7 +13,7 @@
                FontWeight="SemiBold"/>
 
     <Grid ColumnDefinitions="Auto,*,Auto"
-          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+          RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
           ColumnSpacing="12"
           RowSpacing="12">
 
@@ -89,6 +89,16 @@
           Content="CPU / GPU text"/>
 
 <TextBlock Grid.Row="5" Grid.Column="2"/>
+
+
+<TextBlock Grid.Row="6" Grid.Column="0"
+           x:Name="LhmBridgeLabel"
+           Text="Sensor bridge"
+           VerticalAlignment="Center"/>
+
+<CheckBox Grid.Row="6" Grid.Column="1" Grid.ColumnSpan="2"
+          x:Name="LhmBridgeCheckBox"
+          Content="Use LibreHardwareMonitor (if running)"/>
 
           
 

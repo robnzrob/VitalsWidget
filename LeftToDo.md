@@ -38,14 +38,17 @@ Working
 - Added Lockspot for when widget is locked in the bottom left corner, only visible when hovered over
 Sensors
 - NVIDIA GPU working (tested on RTX 3070)
+- AMD GPU working on Windows via ADL Overdrive8 PMLog (tested on RX 9070 XT)
 - Windows CPU WMI provider implemented (may show N/A depending on hardware)
+- Optional LibreHardwareMonitor WMI bridge working (tested: CPU Tctl/Tdie on
+  Ryzen + X570). Needs LHM v0.9.4 or earlier - WMI provider was removed in 0.9.5.
+  Toggle in Settings; no LHM code shipped.
 - Linux hwmon providers implemented (test coverage varies by hardware/driver)
+- `--probe` diagnostic mode prints what every provider returns (redirect stdout)
 
 ## Next tests
 
-- AMD GPU test (RX 7900 XT)
-  - Windows provider
-  - Linux provider
+- AMD GPU Linux provider test (RX 9070 XT)
 - Intel GPU test (Arc machine if possible)
 - Confirm behaviour on multi-monitor setups and different Linux desktops
 
@@ -72,7 +75,6 @@ Sensors
 
 ## Nice to have
 
-- Display which provider is active (debug only)
+- Display which provider is active in the UI (probe mode covers the debug case)
 - Optional “dock to corner” mode (top-right etc) with configurable margin
-- More robust Windows CPU temperature sources (still keep “no drivers shipped” rule)
 

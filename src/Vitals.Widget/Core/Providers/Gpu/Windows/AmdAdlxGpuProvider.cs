@@ -75,8 +75,9 @@ public sealed class AmdAdlxGpuProvider : IGpuTempProvider
         private ADL2_Main_Control_Create _mainCreate = default!;
         private ADL2_Main_Control_Destroy _mainDestroy = default!;
         private ADL2_Adapter_NumberOfAdapters_Get _adapterCountGet = default!;
-        private ADL2_OverdriveN_Temperature_Get? _odnTempGet;           // newer-ish
-        private ADL2_Overdrive5_Temperature_Get? _od5TempGet;           // older fallback
+        private ADL2_New_QueryPMLogData_Get? _pmLogGet;                 // Overdrive8, needed on RDNA cards
+        private ADL2_OverdriveN_Temperature_Get? _odnTempGet;           // older (pre-RDNA)
+        private ADL2_Overdrive5_Temperature_Get? _od5TempGet;           // oldest fallback
 
         private int _adapterCount;
 
@@ -104,7 +105,10 @@ public sealed class AmdAdlxGpuProvider : IGpuTempProvider
                 s._mainDestroy = GetDelegate<ADL2_Main_Control_Destroy>(lib, "ADL2_Main_Control_Destroy");
                 s._adapterCountGet = GetDelegate<ADL2_Adapter_NumberOfAdapters_Get>(lib, "ADL2_Adapter_NumberOfAdapters_Get");
 
-                // Optional temperature APIs (we'll try what exists)
+                // Optional temperature APIs (we'll try what exists).
+                // PMLog (Overdrive8) is the only one modern RDNA drivers still serve;
+                // OverdriveN/5 keep older cards working.
+                s._pmLogGet = TryGetDelegate<ADL2_New_QueryPMLogData_Get>(lib, "ADL2_New_QueryPMLogData_Get");
                 s._odnTempGet = TryGetDelegate<ADL2_OverdriveN_Temperature_Get>(lib, "ADL2_OverdriveN_Temperature_Get");
                 s._od5TempGet = TryGetDelegate<ADL2_Overdrive5_Temperature_Get>(lib, "ADL2_Overdrive5_Temperature_Get");
 
@@ -128,7 +132,7 @@ public sealed class AmdAdlxGpuProvider : IGpuTempProvider
                 }
 
                 // If we don't have ANY temp method, there's nothing useful we can do.
-                if (s._odnTempGet == null && s._od5TempGet == null)
+                if (s._pmLogGet == null && s._odnTempGet == null && s._od5TempGet == null)
                 {
                     s.Dispose();
                     return null;
@@ -154,7 +158,15 @@ public sealed class AmdAdlxGpuProvider : IGpuTempProvider
             // This avoids needing adapter vendor filtering and works fine for a single-GPU machine.
             for (var i = 0; i < _adapterCount; i++)
             {
-                // 1) Prefer OverdriveN if present (common on many modern Radeon drivers)
+                // 1) Prefer Overdrive8 PMLog. On RDNA cards (RX 5000+) this is the only
+                //    ADL temperature API the driver still answers; ODN/OD5 return errors there.
+                if (_pmLogGet != null && TryReadPmLogTempC(i, out var pmTemp))
+                {
+                    tempC = pmTemp;
+                    return true;
+                }
+
+                // 2) Fallback to OverdriveN (pre-RDNA cards)
                 if (_odnTempGet != null)
                 {
                     var raw = 0;
@@ -175,7 +187,7 @@ public sealed class AmdAdlxGpuProvider : IGpuTempProvider
                     }
                 }
 
-                // 2) Fallback to Overdrive5
+                // 3) Fallback to Overdrive5 (oldest cards)
                 if (_od5TempGet != null)
                 {
                     var t = new ADLTemperature
@@ -194,6 +206,47 @@ public sealed class AmdAdlxGpuProvider : IGpuTempProvider
                             return true;
                         }
                     }
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryReadPmLogTempC(int adapterIndex, out int tempC)
+        {
+            tempC = 0;
+
+            if (_pmLogGet == null)
+                return false;
+
+            var output = new ADLPMLogDataOutput
+            {
+                iSize = Marshal.SizeOf<ADLPMLogDataOutput>(),
+                Data = new int[PmLogDataInts]
+            };
+
+            var rc = _pmLogGet(_context, adapterIndex, ref output);
+            if (rc != ADL_OK || output.Data == null)
+                return false;
+
+            // Each sensor slot is a { supported, value } int pair.
+            // Prefer edge temp (the classic "GPU temp"), then GFX die, then hotspot.
+            foreach (var sensorId in PreferredPmLogTempSensors)
+            {
+                var supported = output.Data[sensorId * 2];
+                var value = output.Data[sensorId * 2 + 1];
+
+                if (supported == 0)
+                    continue;
+
+                // Defensive: PMLog temps are documented in degrees C, but keep the
+                // same millidegree heuristic as the older APIs just in case.
+                var t = value > 1000 ? value / 1000 : value;
+
+                if (t > 0 && t <= 150)
+                {
+                    tempC = t;
+                    return true;
                 }
             }
 
@@ -268,6 +321,9 @@ public sealed class AmdAdlxGpuProvider : IGpuTempProvider
         private delegate int ADL2_Adapter_NumberOfAdapters_Get(IntPtr context, out int numAdapters);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate int ADL2_New_QueryPMLogData_Get(IntPtr context, int iAdapterIndex, ref ADLPMLogDataOutput lpDataOutput);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate int ADL2_OverdriveN_Temperature_Get(IntPtr context, int iAdapterIndex, int iTemperatureType, out int iTemperature);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -280,6 +336,34 @@ public sealed class AmdAdlxGpuProvider : IGpuTempProvider
 
             // Temperature in millidegrees Celsius (e.g. 42000 = 42°C)
             public int iTemperature;
+        }
+
+        // --- Overdrive8 PMLog (from adl_defines.h / adl_structures.h) ---
+
+        // ADL_PMLOG_MAX_SENSORS = 256 slots of ADLSingleSensorData { int supported; int value; }
+        private const int PmLogMaxSensors = 256;
+        private const int PmLogDataInts = PmLogMaxSensors * 2;
+
+        // ADL_PMLOG_SENSORS ids we care about (order = preference)
+        private const int PmLogTemperatureEdge = 8;      // ADL_PMLOG_TEMPERATURE_EDGE
+        private const int PmLogTemperatureHotspot = 27;  // ADL_PMLOG_TEMPERATURE_HOTSPOT
+        private const int PmLogTemperatureGfx = 28;      // ADL_PMLOG_TEMPERATURE_GFX
+
+        private static readonly int[] PreferredPmLogTempSensors =
+        {
+            PmLogTemperatureEdge,
+            PmLogTemperatureGfx,
+            PmLogTemperatureHotspot
+        };
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct ADLPMLogDataOutput
+        {
+            public int iSize;
+
+            // Flattened ADLSingleSensorData[256]: { supported, value } pairs.
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = PmLogDataInts)]
+            public int[] Data;
         }
     }
 }
